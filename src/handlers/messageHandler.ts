@@ -32,6 +32,20 @@ If someone sends a payment screenshot, acknowledge it and let them know you'll v
 const HUMAN_TAKEOVER_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 const CONVERSATION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours for full conversation history
 
+// Waiting list form link
+const WAITING_LIST_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSclnNifOnPgTyNSD-GAcQoTCHBqpoQmAgxUkBPtP4-M3nYN2Q/viewform';
+
+/**
+ * Check if message contains "waiting list" keyword
+ */
+function isWaitingListRequest(text: string): boolean {
+  const normalizedText = text.toLowerCase().trim();
+  return normalizedText.includes('waiting list') ||
+         normalizedText.includes('waitinglist') ||
+         normalizedText === 'waiting' ||
+         normalizedText === 'waitlist';
+}
+
 /**
  * Main entry point for handling incoming webhook messages
  */
@@ -255,9 +269,30 @@ function formatConversationForAI(context: ConversationContext): { role: 'user' |
 }
 
 /**
- * Handle text message - generate AI response
+ * Handle text message - generate AI response or send waiting list form
  */
 async function handleTextMessage(senderId: string, context: ConversationContext): Promise<void> {
+  // Get the last user message
+  const lastUserMessage = context.messages[context.messages.length - 1];
+
+  // Check if user is requesting the waiting list
+  if (lastUserMessage && isWaitingListRequest(lastUserMessage.content)) {
+    const waitingListResponse = `Here is the form link:\n${WAITING_LIST_FORM_URL}\n\nSee you there!`;
+
+    const messageId = await sendMessage(senderId, waitingListResponse);
+
+    addMessageToContext(context, {
+      role: 'assistant',
+      content: waitingListResponse,
+      timestamp: Date.now(),
+      messageId: messageId || undefined,
+      sentByAI: true,
+    });
+
+    console.log(`Sent waiting list form to ${senderId}`);
+    return;
+  }
+
   // Get full conversation history for AI
   const conversationHistory = formatConversationForAI(context);
 
