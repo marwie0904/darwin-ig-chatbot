@@ -3,7 +3,8 @@ import crypto from 'crypto';
 import { config } from '../config';
 import { InstagramUser, InstagramAttachment } from '../types';
 
-const graphApiUrl = 'https://graph.facebook.com/v18.0';
+// Use Instagram Graph API directly
+const graphApiUrl = 'https://graph.instagram.com/v21.0';
 
 const instagramClient = axios.create({
   baseURL: graphApiUrl,
@@ -26,7 +27,7 @@ function cleanupMessageIds(): void {
 
 export async function sendMessage(recipientId: string, text: string): Promise<string | null> {
   try {
-    const response = await instagramClient.post(`/${config.instagram.pageId}/messages`, {
+    const response = await instagramClient.post('/me/messages', {
       recipient: { id: recipientId },
       message: { text },
       messaging_type: 'RESPONSE',
@@ -59,7 +60,7 @@ export function markMessageAsSentByAI(messageId: string): void {
 
 export async function sendTypingIndicator(recipientId: string, action: 'typing_on' | 'typing_off'): Promise<void> {
   try {
-    await instagramClient.post(`/${config.instagram.pageId}/messages`, {
+    await instagramClient.post('/me/messages', {
       recipient: { id: recipientId },
       sender_action: action,
     });

@@ -12,11 +12,12 @@ export const config = {
     accessToken: process.env.INSTAGRAM_ACCESS_TOKEN || '',
     appSecret: process.env.INSTAGRAM_APP_SECRET || '',
     verifyToken: process.env.INSTAGRAM_VERIFY_TOKEN || '',
-    pageId: process.env.FACEBOOK_PAGE_ID || '',
+    appId: process.env.INSTAGRAM_APP_ID || '',
   },
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN || '',
     chatId: process.env.TELEGRAM_CHAT_ID || '',
+    enabled: false, // Temporarily disabled
   },
   server: {
     port: parseInt(process.env.PORT || '3000', 10),

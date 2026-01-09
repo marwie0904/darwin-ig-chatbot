@@ -339,8 +339,10 @@ async function handleImageMessage(senderId: string, imageUrls: string[], context
         paymentDetails: paymentResult,
       };
 
-      // Send Telegram notification
-      await sendPaymentNotification(notification);
+      // Send Telegram notification (if enabled)
+      if (config.telegram.enabled) {
+        await sendPaymentNotification(notification);
+      }
 
       // Only send acknowledgment if AI is active
       const shouldAIRespond = checkIfAIShouldRespond(context);
