@@ -33,6 +33,7 @@ IMPORTANT: Do not use text formatting such as ** for bold, * for italic, or any 
 // Constants
 const HUMAN_TAKEOVER_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 const CONVERSATION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours for full conversation history
+const AI_ENABLED = false; // Set to true to enable AI responses
 
 // Waiting list form link
 const WAITING_LIST_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSclnNifOnPgTyNSD-GAcQoTCHBqpoQmAgxUkBPtP4-M3nYN2Q/viewform';
@@ -101,12 +102,14 @@ export async function handleIncomingMessage(messaging: WebhookMessaging): Promis
         messageId: message.mid,
       });
 
-      if (shouldAIRespond) {
+      if (!AI_ENABLED) {
+        console.log(`AI disabled - not responding to ${senderId}`);
+      } else if (shouldAIRespond) {
         await handleTextMessage(senderId, context);
       } else {
         console.log(`AI response paused for ${senderId} - human takeover active`);
       }
-    } else if (imageUrls.length > 0 && shouldAIRespond) {
+    } else if (imageUrls.length > 0 && AI_ENABLED && shouldAIRespond) {
       // If only image was sent and AI is active, acknowledge it
       const ackMessage = "Thank you for sending that! I'm checking the image now.";
       const messageId = await sendMessage(senderId, ackMessage);
