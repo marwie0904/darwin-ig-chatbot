@@ -4,7 +4,7 @@ dotenv.config();
 export const config = {
   openRouter: {
     apiKey: process.env.OPENROUTER_API_KEY || '',
-    chatModel: 'openai/gpt-oss-120b',
+    chatModel: 'moonshotai/kimi-k2-0905',
     visionModel: 'google/gemini-2.0-flash-lite-001',
     baseUrl: 'https://openrouter.ai/api/v1',
   },

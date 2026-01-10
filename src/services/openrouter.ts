@@ -12,62 +12,29 @@ const openRouterClient = axios.create({
   },
 });
 
-// 2nd AI pass to format and clean up the response
-async function formatResponse(rawResponse: string): Promise<string> {
-  try {
-    const response = await openRouterClient.post('/chat/completions', {
-      model: config.openRouter.chatModel,
-      messages: [
-        {
-          role: 'system',
-          content: `You are a message formatter. Your job is to clean up the given message for Instagram DMs.
-
-RULES:
-1. Remove ALL markdown formatting: no **, no *, no #, no numbered lists, no bullet points
-2. Make it more concise if it's too long
-3. Keep it conversational and friendly
-4. Return ONLY the cleaned message, nothing else
-5. Do not add any new information
-6. Keep URLs exactly as they are`
-        },
-        {
-          role: 'user',
-          content: `Clean up this message for Instagram:\n\n${rawResponse}`
-        }
-      ],
-      max_tokens: 300,
-      temperature: 0.1,
-    });
-
-    return response.data.choices[0]?.message?.content || rawResponse;
-  } catch (error) {
-    console.error('Format response error:', error);
-    // If formatting fails, return original response
-    return rawResponse;
-  }
-}
-
 export async function generateChatResponse(
   conversationHistory: { role: 'user' | 'assistant'; content: string }[],
-  systemPrompt: string
+  systemPrompt: string,
+  knowledgeBase: string
 ): Promise<string> {
   try {
     const response = await openRouterClient.post('/chat/completions', {
       model: config.openRouter.chatModel,
+      provider: {
+        order: ['Fireworks'],
+        quantizations: ['fp8'],
+      },
       messages: [
         { role: 'system', content: systemPrompt },
+        { role: 'user', content: `KNOWLEDGE BASE:\n${knowledgeBase}` },
+        { role: 'assistant', content: 'I understand the knowledge base. I will use this information to answer questions accurately.' },
         ...conversationHistory,
       ],
       max_tokens: 300,
       temperature: 0.3,
     });
 
-    const rawResponse = response.data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
-
-    // Pass through 2nd AI for formatting
-    const formattedResponse = await formatResponse(rawResponse);
-
-    return formattedResponse;
+    return response.data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
   } catch (error) {
     console.error('OpenRouter chat error:', error);
     throw error;
