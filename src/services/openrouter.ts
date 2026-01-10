@@ -23,7 +23,7 @@ export async function generateChatResponse(
         { role: 'system', content: systemPrompt },
         ...conversationHistory,
       ],
-      max_tokens: 1000,
+      max_tokens: 300,
       temperature: 0.7,
     });
 

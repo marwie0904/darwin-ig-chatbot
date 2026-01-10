@@ -27,9 +27,15 @@ function cleanupMessageIds(): void {
 
 export async function sendMessage(recipientId: string, text: string): Promise<string | null> {
   try {
+    // Instagram has a 2000 character limit - truncate if needed
+    let truncatedText = text;
+    if (text.length > 1900) {
+      truncatedText = text.substring(0, 1900) + '...';
+    }
+
     const response = await instagramClient.post('/me/messages', {
       recipient: { id: recipientId },
-      message: { text },
+      message: { text: truncatedText },
       messaging_type: 'RESPONSE',
     });
 
