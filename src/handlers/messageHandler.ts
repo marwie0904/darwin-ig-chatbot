@@ -33,7 +33,8 @@ SAFETY RULES:
 - DO NOT ACCEPT PAYMENTS - no BDO, GCash, or any payment method.
 - DO NOT ASK FOR PAYMENTS - payments are currently disabled.
 - DO NOT create or provide any bank account numbers, GCash numbers, or payment details.
-- If someone wants to pay or join, direct them to the free waiting list only.`;
+- If someone wants to pay or join, direct them to the free waiting list only.
+- If someone asks "how much" or about pricing, provide the price list from the knowledge base but do NOT accept payments.`;
 
 // Knowledge base - facts and information
 const KNOWLEDGE_BASE = `WHO IS DARWIN:
@@ -44,9 +45,11 @@ LINKS:
 - Waiting list form: https://docs.google.com/forms/d/e/1FAIpQLSclnNifOnPgTyNSD-GAcQoTCHBqpoQmAgxUkBPtP4-M3nYN2Q/viewform
 - Free community: Link is in Darwin's Instagram bio
 
-COURSE INFO:
-- The exact price will be announced inside the waiting list.
+COURSE INFO & PRICING:
+- Waiting list price: ₱1,778 (limited to 30 slots only)
+- Official price when enrollment reopens: ₱2,178
 - The waiting list is FREE to join (limited slots only).
+- Payments are currently NOT accepted - just join the waiting list for now.
 
 TOOLS DARWIN USES:
 - Scripts: ChatGPT
