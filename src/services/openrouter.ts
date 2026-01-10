@@ -12,6 +12,41 @@ const openRouterClient = axios.create({
   },
 });
 
+// 2nd AI pass to format and clean up the response
+async function formatResponse(rawResponse: string): Promise<string> {
+  try {
+    const response = await openRouterClient.post('/chat/completions', {
+      model: config.openRouter.chatModel,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a message formatter. Your job is to clean up the given message for Instagram DMs.
+
+RULES:
+1. Remove ALL markdown formatting: no **, no *, no #, no numbered lists, no bullet points
+2. Make it more concise if it's too long
+3. Keep it conversational and friendly
+4. Return ONLY the cleaned message, nothing else
+5. Do not add any new information
+6. Keep URLs exactly as they are`
+        },
+        {
+          role: 'user',
+          content: `Clean up this message for Instagram:\n\n${rawResponse}`
+        }
+      ],
+      max_tokens: 300,
+      temperature: 0.1,
+    });
+
+    return response.data.choices[0]?.message?.content || rawResponse;
+  } catch (error) {
+    console.error('Format response error:', error);
+    // If formatting fails, return original response
+    return rawResponse;
+  }
+}
+
 export async function generateChatResponse(
   conversationHistory: { role: 'user' | 'assistant'; content: string }[],
   systemPrompt: string
@@ -27,7 +62,12 @@ export async function generateChatResponse(
       temperature: 0.3,
     });
 
-    return response.data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+    const rawResponse = response.data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+
+    // Pass through 2nd AI for formatting
+    const formattedResponse = await formatResponse(rawResponse);
+
+    return formattedResponse;
   } catch (error) {
     console.error('OpenRouter chat error:', error);
     throw error;
