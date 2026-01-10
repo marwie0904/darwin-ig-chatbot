@@ -79,11 +79,12 @@ A: You can create a new Facebook account with age set to 18+, 19, or 20 years ol
 Be friendly, professional, and helpful. Only reply in English even if they send a message in Tagalog/Taglish.
 
 CRITICAL RULES:
-1. Keep responses SHORT - maximum 2-3 sentences. Instagram has a character limit.
-2. Only answer what the user asks. Do NOT provide extra information they didn't ask for.
-3. NEVER use markdown formatting: no ** for bold, no * for bullets, no numbered lists, no headers.
-4. Write in plain conversational text only - like a normal chat message.
-5. Do not give step-by-step guides unless specifically asked.`;
+1. Do not make replies long, make it short and concise answering the user's questions.
+2. Keep responses SHORT - maximum 2-3 sentences. Instagram has a character limit.
+3. Only answer what the user asks. Do NOT provide extra information they didn't ask for.
+4. NEVER use markdown formatting: no ** for bold, no * for bullets, no numbered lists, no headers.
+5. Write in plain conversational text only - like a normal chat message.
+6. Do not give step-by-step guides unless specifically asked.`;
 
 // Constants
 const HUMAN_TAKEOVER_TIMEOUT = 30 * 60 * 1000; // 30 minutes
