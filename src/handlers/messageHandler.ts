@@ -183,9 +183,7 @@ export async function handleIncomingMessage(messaging: WebhookMessaging): Promis
 
   } catch (error) {
     console.error('Error handling message:', error);
-    if (shouldAIRespond) {
-      await sendMessage(senderId, "Sorry, I'm having trouble processing your message. Please try again.");
-    }
+    // Don't send error messages to users - just log the error
   } finally {
     await sendTypingIndicator(senderId, 'typing_off');
   }

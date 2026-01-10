@@ -24,7 +24,7 @@ export async function generateChatResponse(
         ...conversationHistory,
       ],
       max_tokens: 300,
-      temperature: 0.7,
+      temperature: 0.3,
     });
 
     return response.data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';

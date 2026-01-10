@@ -25,28 +25,66 @@ function cleanupMessageIds(): void {
   }
 }
 
+// Split text into chunks that fit Instagram's character limit
+function splitMessage(text: string, maxLength: number = 1900): string[] {
+  if (text.length <= maxLength) {
+    return [text];
+  }
+
+  const chunks: string[] = [];
+  let remaining = text;
+
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLength) {
+      chunks.push(remaining);
+      break;
+    }
+
+    // Find a good break point (sentence end, or space)
+    let breakPoint = remaining.lastIndexOf('. ', maxLength);
+    if (breakPoint === -1 || breakPoint < maxLength / 2) {
+      breakPoint = remaining.lastIndexOf(' ', maxLength);
+    }
+    if (breakPoint === -1 || breakPoint < maxLength / 2) {
+      breakPoint = maxLength;
+    }
+
+    chunks.push(remaining.substring(0, breakPoint + 1).trim());
+    remaining = remaining.substring(breakPoint + 1).trim();
+  }
+
+  return chunks;
+}
+
 export async function sendMessage(recipientId: string, text: string): Promise<string | null> {
   try {
-    // Instagram has a 2000 character limit - truncate if needed
-    let truncatedText = text;
-    if (text.length > 1900) {
-      truncatedText = text.substring(0, 1900) + '...';
+    // Split message if it exceeds Instagram's 2000 character limit
+    const chunks = splitMessage(text, 1900);
+    let lastMessageId: string | null = null;
+
+    for (const chunk of chunks) {
+      const response = await instagramClient.post('/me/messages', {
+        recipient: { id: recipientId },
+        message: { text: chunk },
+        messaging_type: 'RESPONSE',
+      });
+
+      const messageId = response.data?.message_id;
+      if (messageId) {
+        aiSentMessageIds.add(messageId);
+        cleanupMessageIds();
+        lastMessageId = messageId;
+      }
+
+      console.log(`Message sent to ${recipientId}, message_id: ${messageId}`);
+
+      // Small delay between messages if sending multiple
+      if (chunks.length > 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
 
-    const response = await instagramClient.post('/me/messages', {
-      recipient: { id: recipientId },
-      message: { text: truncatedText },
-      messaging_type: 'RESPONSE',
-    });
-
-    const messageId = response.data?.message_id;
-    if (messageId) {
-      aiSentMessageIds.add(messageId);
-      cleanupMessageIds();
-    }
-
-    console.log(`Message sent to ${recipientId}, message_id: ${messageId}`);
-    return messageId || null;
+    return lastMessageId;
   } catch (error) {
     console.error('Error sending Instagram message:', error);
     throw error;
