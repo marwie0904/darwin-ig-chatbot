@@ -1,14 +1,12 @@
-import { WebhookMessaging, ConversationContext, ConversationMessage, TelegramNotification } from '../types';
-import { generateChatResponse, analyzePaymentImage } from '../services/openrouter';
+import { WebhookMessaging, ConversationContext, ConversationMessage } from '../types';
+import { generateChatResponse } from '../services/openrouter';
 import {
   sendMessage,
   sendTypingIndicator,
   getUserProfile,
-  generateMessageLink,
-  extractImageUrls,
   isMessageSentByAI
 } from '../services/instagram';
-import { sendPaymentNotification, sendBuyerNotification } from '../services/telegram';
+import { sendBuyerNotification } from '../services/telegram';
 import { config } from '../config';
 
 // In-memory conversation store (consider using Redis for production)
@@ -155,14 +153,6 @@ export async function handleIncomingMessage(messaging: WebhookMessaging): Promis
   await sendTypingIndicator(senderId, 'typing_on');
 
   try {
-    // Check if the message contains images (potential payment)
-    const imageUrls = extractImageUrls(message.attachments);
-
-    if (imageUrls.length > 0) {
-      // Always process payment images regardless of takeover status
-      await handleImageMessage(senderId, imageUrls, context);
-    }
-
     // Handle text message for AI response
     if (message.text) {
       // Add user message to conversation history
@@ -180,18 +170,6 @@ export async function handleIncomingMessage(messaging: WebhookMessaging): Promis
       } else {
         console.log(`AI response paused for ${senderId} - human takeover active`);
       }
-    } else if (imageUrls.length > 0 && AI_ENABLED && shouldAIRespond) {
-      // If only image was sent and AI is active, acknowledge it
-      const ackMessage = "Thank you for sending that! I'm checking the image now.";
-      const messageId = await sendMessage(senderId, ackMessage);
-
-      addMessageToContext(context, {
-        role: 'assistant',
-        content: ackMessage,
-        timestamp: Date.now(),
-        messageId: messageId || undefined,
-        sentByAI: true,
-      });
     }
 
     // Save context
@@ -399,56 +377,6 @@ async function handleTextMessage(senderId: string, context: ConversationContext)
     messageId: messageId || undefined,
     sentByAI: true,
   });
-}
-
-/**
- * Handle image message - check for payment
- */
-async function handleImageMessage(senderId: string, imageUrls: string[], context: ConversationContext): Promise<void> {
-  for (const imageUrl of imageUrls) {
-    console.log(`Analyzing image from ${senderId}: ${imageUrl}`);
-
-    // Analyze the image for payment detection
-    const paymentResult = await analyzePaymentImage(imageUrl);
-
-    console.log('Payment analysis result:', paymentResult);
-
-    if (paymentResult.isPayment) {
-      // Get user profile for notification
-      const userProfile = await getUserProfile(senderId);
-
-      // Create notification
-      const notification: TelegramNotification = {
-        instagramName: userProfile.name || 'Unknown',
-        instagramUsername: userProfile.username,
-        messageLink: generateMessageLink(senderId),
-        paymentImageUrl: imageUrl,
-        paymentDetails: paymentResult,
-      };
-
-      // Send Telegram notification (if enabled)
-      if (config.telegram.enabled) {
-        await sendPaymentNotification(notification);
-      }
-
-      // Only send acknowledgment if AI is active
-      const shouldAIRespond = checkIfAIShouldRespond(context);
-      if (shouldAIRespond) {
-        const ackMessage = `Thank you for your payment! I've received your GCash transaction${paymentResult.amount ? ` of ${paymentResult.amount}` : ''}. Our team will verify and process it shortly.`;
-        const messageId = await sendMessage(senderId, ackMessage);
-
-        addMessageToContext(context, {
-          role: 'assistant',
-          content: ackMessage,
-          timestamp: Date.now(),
-          messageId: messageId || undefined,
-          sentByAI: true,
-        });
-      }
-
-      console.log(`Payment notification sent for user ${senderId}`);
-    }
-  }
 }
 
 // Cleanup old conversations periodically

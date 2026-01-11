@@ -90,7 +90,6 @@ app.listen(config.server.port, () => {
 ║  Port: ${config.server.port.toString().padEnd(50)}║
 ║  Webhook URL: ${(config.server.webhookUrl || 'Not set').padEnd(43)}║
 ║  Chat Model: ${config.openRouter.chatModel.padEnd(44)}║
-║  Vision Model: ${config.openRouter.visionModel.padEnd(42)}║
 ╚═══════════════════════════════════════════════════════════╝
   `);
 

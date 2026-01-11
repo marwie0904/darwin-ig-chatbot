@@ -38,22 +38,6 @@ export interface WebhookMessaging {
   };
 }
 
-export interface PaymentDetectionResult {
-  isPayment: boolean;
-  amount?: string;
-  senderName?: string;
-  referenceNumber?: string;
-  rawAnalysis?: string;
-}
-
-export interface TelegramNotification {
-  instagramName: string;
-  instagramUsername?: string;
-  messageLink?: string;
-  paymentImageUrl: string;
-  paymentDetails: PaymentDetectionResult;
-}
-
 export interface ConversationMessage {
   role: 'user' | 'assistant';
   content: string;

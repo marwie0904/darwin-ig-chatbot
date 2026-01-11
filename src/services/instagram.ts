@@ -1,7 +1,7 @@
 import axios from 'axios';
 import crypto from 'crypto';
 import { config } from '../config';
-import { InstagramUser, InstagramAttachment } from '../types';
+import { InstagramUser } from '../types';
 
 // Use Instagram Graph API directly
 const graphApiUrl = 'https://graph.instagram.com/v21.0';
@@ -141,14 +141,3 @@ export function verifyWebhookSignature(payload: string, signature: string): bool
   return signature === `sha256=${expectedSignature}`;
 }
 
-export function generateMessageLink(userId: string): string {
-  // Instagram DM links format
-  return `https://www.instagram.com/direct/t/${userId}`;
-}
-
-export function extractImageUrls(attachments?: InstagramAttachment[]): string[] {
-  if (!attachments) return [];
-  return attachments
-    .filter(att => att.type === 'image')
-    .map(att => att.payload.url);
-}
