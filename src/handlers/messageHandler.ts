@@ -8,7 +8,7 @@ import {
   extractImageUrls,
   isMessageSentByAI
 } from '../services/instagram';
-import { sendPaymentNotification } from '../services/telegram';
+import { sendPaymentNotification, sendBuyerNotification } from '../services/telegram';
 import { config } from '../config';
 
 // In-memory conversation store (consider using Redis for production)
@@ -29,27 +29,29 @@ INSTRUCTIONS:
 9. Use the knowledge base to answer questions accurately.
 10. DO NOT use markdown formatting - no **, no *, no #, no bullet points, no numbered lists. Write plain text only.
 
-SAFETY RULES:
-- DO NOT ACCEPT PAYMENTS - no BDO, GCash, or any payment method.
-- DO NOT ASK FOR PAYMENTS - payments are currently disabled.
-- DO NOT create or provide any bank account numbers, GCash numbers, or payment details.
-- If someone wants to pay or join, direct them to the free waiting list only.
-- If someone asks "how much" or about pricing, provide the price list from the knowledge base but do NOT accept payments.`;
+SPECIAL TRIGGERS:
+- If user says "faceless" or "pislis", respond with the Pislis link from knowledge base.
+- If user asks "how much" or about pricing, provide the price and the pricing explanation video.
+
+PURCHASE FLOW:
+- If user shows interest in buying, ask them: "Would you like to buy the course?"
+- Only if user confirms with phrases like "Yes I want to buy", "I want to purchase", "Yes", "I'll buy it" - then tell them Darwin will message them shortly.
+- DO NOT accept payments directly - no BDO, GCash, or any payment method.
+- DO NOT provide any bank account numbers, GCash numbers, or payment details.`;
 
 // Knowledge base - facts and information
 const KNOWLEDGE_BASE = `WHO IS DARWIN:
 Darwin Daug is a 21-year-old IT student from NORSU Siaton. In 2018, at 13 years old (Grade 8), he almost lost his life to dengue. Because of that experience, he spent most of his time at home and started researching health topics daily. To pass time, he experimented with basic video editing - memes, random clips, and simple content. In 2020, he created his first online page. It wasn't monetized and earned nothing for years, but he stayed consistent. In 2024, he launched a health-focused page based on years of research and personal experience. Unexpectedly, he reached his first million at age 19. Now at 21, he consistently earns six figures per month. This course was created to share real, tested strategies based on trial and error - not theory.
 
 LINKS:
-- Video guide for the community: https://youtu.be/cncRBCmMNXY
-- Waiting list form: https://docs.google.com/forms/d/e/1FAIpQLSclnNifOnPgTyNSD-GAcQoTCHBqpoQmAgxUkBPtP4-M3nYN2Q/viewform
+- Video guide for the community: https://youtu.be/0itPS-kATPk
+- Pislis (free community / create account): https://pislis.onrender.com/login
+- Pricing explanation video: https://youtu.be/paJHXwTDIw8
 - Free community: Link is in Darwin's Instagram bio
 
 COURSE INFO & PRICING:
-- Waiting list price: ₱1,778 (limited to 30 slots only)
-- Official price when enrollment reopens: ₱2,178
-- The waiting list is FREE to join (limited slots only).
-- Payments are currently NOT accepted - just join the waiting list for now.
+- Course price: ₱2,178 + ₱99 monthly subscription
+- For pricing details, watch: https://youtu.be/paJHXwTDIw8
 
 TOOLS DARWIN USES:
 - Scripts: ChatGPT
@@ -81,18 +83,41 @@ const HUMAN_TAKEOVER_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 const CONVERSATION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours for full conversation history
 const AI_ENABLED = true; // Set to true to enable AI responses
 
-// Waiting list form link
-const WAITING_LIST_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSclnNifOnPgTyNSD-GAcQoTCHBqpoQmAgxUkBPtP4-M3nYN2Q/viewform';
-
 /**
- * Check if message contains "waiting list" keyword
+ * Check if user confirms they want to buy
  */
-function isWaitingListRequest(text: string): boolean {
+function isPurchaseConfirmation(text: string): boolean {
   const normalizedText = text.toLowerCase().trim();
-  return normalizedText.includes('waiting list') ||
-         normalizedText.includes('waitinglist') ||
-         normalizedText === 'waiting' ||
-         normalizedText === 'waitlist';
+  const confirmationPhrases = [
+    'yes i want to buy',
+    'i want to buy',
+    'i want to purchase',
+    'yes i want to purchase',
+    'i\'ll buy it',
+    'ill buy it',
+    'i will buy it',
+    'yes i\'ll buy',
+    'yes ill buy',
+    'i\'d like to buy',
+    'id like to buy',
+    'i would like to buy',
+    'gusto ko bumili',
+    'bibilhin ko',
+    'yes please',
+    'yes, i want to buy',
+    'yes, i\'ll buy',
+    'oo bibili ako',
+    'oo gusto ko',
+    'avail',
+    'i want to avail',
+    'avail ako',
+    'pabili',
+    'buy na',
+    'yes buy',
+  ];
+
+  return confirmationPhrases.some(phrase => normalizedText.includes(phrase)) ||
+         (normalizedText === 'yes' || normalizedText === 'oo' || normalizedText === 'sure' || normalizedText === 'okay' || normalizedText === 'ok');
 }
 
 /**
@@ -318,27 +343,42 @@ function formatConversationForAI(context: ConversationContext): { role: 'user' |
 }
 
 /**
- * Handle text message - generate AI response or send waiting list form
+ * Handle text message - generate AI response and check for purchase confirmation
  */
 async function handleTextMessage(senderId: string, context: ConversationContext): Promise<void> {
   // Get the last user message
   const lastUserMessage = context.messages[context.messages.length - 1];
 
-  // Check if user is requesting the waiting list
-  if (lastUserMessage && isWaitingListRequest(lastUserMessage.content)) {
-    const waitingListResponse = `Here is the form link:\n${WAITING_LIST_FORM_URL}\n\nSee you there!`;
+  // Check if user confirmed they want to buy
+  if (lastUserMessage && isPurchaseConfirmation(lastUserMessage.content)) {
+    // Get user profile to get username
+    const userProfile = await getUserProfile(senderId);
+    const username = userProfile.username || senderId;
 
-    const messageId = await sendMessage(senderId, waitingListResponse);
+    // Send Telegram notification
+    if (config.telegram.enabled) {
+      try {
+        await sendBuyerNotification(username);
+        console.log(`Telegram buyer notification sent for @${username}`);
+      } catch (error) {
+        console.error('Failed to send Telegram buyer notification:', error);
+      }
+    }
+
+    // Send confirmation to user
+    const confirmationResponse = `Great! Darwin will message you shortly to help you with your purchase. Please make sure you're following him so he can send you a message!`;
+
+    const messageId = await sendMessage(senderId, confirmationResponse);
 
     addMessageToContext(context, {
       role: 'assistant',
-      content: waitingListResponse,
+      content: confirmationResponse,
       timestamp: Date.now(),
       messageId: messageId || undefined,
       sentByAI: true,
     });
 
-    console.log(`Sent waiting list form to ${senderId}`);
+    console.log(`Purchase confirmation received from ${senderId} (@${username})`);
     return;
   }
 

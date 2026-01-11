@@ -17,7 +17,7 @@ export const config = {
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN || '',
     chatId: process.env.TELEGRAM_CHAT_ID || '',
-    enabled: false, // Temporarily disabled
+    enabled: true,
   },
   server: {
     port: parseInt(process.env.PORT || '3000', 10),
